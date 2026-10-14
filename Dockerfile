@@ -23,7 +23,7 @@ FROM debian:stable-slim
 RUN useradd -m -d /opt/gophish -s /bin/bash app
 
 RUN apt-get update && \
-	apt-get install --no-install-recommends -y jq libcap2-bin ca-certificates && \
+	apt-get install --no-install-recommends -y jq libcap2-bin ca-certificates curl && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -45,5 +45,10 @@ RUN sed -i 's/127.0.0.1/0.0.0.0/g' config.json
 RUN touch config.json.tmp
 
 EXPOSE 3333 8080 8443 80
+
+# Probe the admin server. Tries HTTPS first (the default, with a self-signed
+# cert hence -k), falling back to HTTP in case ADMIN_USE_TLS was overridden.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+	CMD curl -skf https://localhost:3333/ || curl -sf http://localhost:3333/ || exit 1
 
 CMD ["bash", "./docker/run.sh"]
