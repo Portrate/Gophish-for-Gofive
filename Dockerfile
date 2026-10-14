@@ -1,5 +1,5 @@
 # Minify client side assets (JavaScript)
-FROM node:latest AS build-js
+FROM node:16 AS build-js
 
 RUN npm install gulp gulp-cli -g
 
@@ -35,6 +35,10 @@ COPY --from=build-golang /go/src/github.com/gophish/gophish/config.json ./
 RUN chown app. config.json
 
 RUN setcap 'cap_net_bind_service=+ep' /opt/gophish/gophish
+
+# Persistent data dir for the SQLite DB, owned by the app user so a
+# mounted volume + DB_FILE_PATH=/opt/gophish/data/gophish.db is writable
+RUN mkdir -p /opt/gophish/data && chown app. /opt/gophish/data
 
 USER app
 RUN sed -i 's/127.0.0.1/0.0.0.0/g' config.json
